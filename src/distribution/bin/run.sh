@@ -39,7 +39,7 @@ if hash java 2>/dev/null; then
 
     ############## VARIABLES
     JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true"
-    JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=3389"
+    JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005"
 
     JAVA_OPTS="$JAVA_OPTS --add-opens java.base/java.lang=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS --add-opens java.base/java.nio=ALL-UNNAMED"

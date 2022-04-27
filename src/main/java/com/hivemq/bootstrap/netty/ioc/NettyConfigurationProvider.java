@@ -16,12 +16,13 @@
 package com.hivemq.bootstrap.netty.ioc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.hivemq.bootstrap.ioc.GuiceBootstrap;
 import com.hivemq.bootstrap.netty.NettyConfiguration;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -67,7 +68,11 @@ public class NettyConfigurationProvider implements Provider<NettyConfiguration> 
         final EventLoopGroup childGroup = createChildEventLoop();
         log.debug("create parent event loop is {}",parentGroup);
         log.debug("create child event loop is {}",childGroup);
-        return new NettyConfiguration(NioServerSocketChannel.class, NioSocketChannel.class, parentGroup, childGroup);
+        return useEpoll() ? new NettyConfiguration(EpollServerSocketChannel.class,
+                EpollSocketChannel.class,
+                parentGroup,
+                childGroup) :
+                new NettyConfiguration(NioServerSocketChannel.class, NioSocketChannel.class, parentGroup, childGroup);
     }
 
     /**
