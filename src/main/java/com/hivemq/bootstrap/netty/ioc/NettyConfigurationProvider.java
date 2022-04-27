@@ -16,12 +16,17 @@
 package com.hivemq.bootstrap.netty.ioc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.bootstrap.ioc.GuiceBootstrap;
 import com.hivemq.bootstrap.netty.NettyConfiguration;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -37,13 +42,31 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Singleton
 public class NettyConfigurationProvider implements Provider<NettyConfiguration> {
 
+    private static final Logger log = LoggerFactory.getLogger(NettyConfigurationProvider.class);
+
+    private static boolean isLinuxPlatform = false;
+    private static boolean isWindowsPlatform = false;
+
+    public static final String OS_NAME = System.getProperty("os.name");
+
+    static {
+        if (OS_NAME != null && OS_NAME.toLowerCase().contains("linux")) {
+            isLinuxPlatform = true;
+        }
+
+        if (OS_NAME != null && OS_NAME.toLowerCase().contains("windows")) {
+            isWindowsPlatform = true;
+        }
+    }
+
     @NotNull
     @Override
     public NettyConfiguration get() {
 
         final EventLoopGroup parentGroup = createParentEventLoop();
         final EventLoopGroup childGroup = createChildEventLoop();
-
+        log.debug("create parent event loop is {}",parentGroup);
+        log.debug("create child event loop is {}",childGroup);
         return new NettyConfiguration(NioServerSocketChannel.class, NioSocketChannel.class, parentGroup, childGroup);
     }
 
@@ -55,7 +78,7 @@ public class NettyConfigurationProvider implements Provider<NettyConfiguration> 
      */
     @NotNull
     private EventLoopGroup createParentEventLoop() {
-        return new NioEventLoopGroup(1, createThreadFactory("hivemq-eventloop-parent-%d"));
+        return useEpoll() ? new EpollEventLoopGroup(1,createThreadFactory("hivemq-epolleventloop-parent-%d") ) : new NioEventLoopGroup(1, createThreadFactory("hivemq-eventloop-parent-%d"));
     }
 
     /**
@@ -67,7 +90,7 @@ public class NettyConfigurationProvider implements Provider<NettyConfiguration> 
     @NotNull
     private EventLoopGroup createChildEventLoop() {
         //Default Netty Threads.
-        return new NioEventLoopGroup(0, createThreadFactory("hivemq-eventloop-child-%d"));
+        return useEpoll() ? new EpollEventLoopGroup(0,createThreadFactory("hivemq-epolleventloop-child-%d") ) : new NioEventLoopGroup(0, createThreadFactory("hivemq-eventloop-child-%d"));
     }
 
     /**
@@ -82,5 +105,9 @@ public class NettyConfigurationProvider implements Provider<NettyConfiguration> 
         return new ThreadFactoryBuilder().
                 setNameFormat(nameFormat).
                 build();
+    }
+
+    private boolean useEpoll() {
+        return isLinuxPlatform && Epoll.isAvailable();
     }
 }

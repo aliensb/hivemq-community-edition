@@ -97,6 +97,7 @@ dependencies {
     implementation("io.netty:netty-common:${property("netty.version")}")
     implementation("io.netty:netty-handler:${property("netty.version")}")
     implementation("io.netty:netty-transport:${property("netty.version")}")
+    implementation("io.netty:netty-transport-native-epoll:${property("netty.version")}")
 
     // logging
     implementation("org.slf4j:slf4j-api:${property("slf4j.version")}")
